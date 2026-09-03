@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📱 Flashlight Projector - Classroom Wall</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* ===== FLASHLIGHT ACTIVATED OVERLAY ===== */
+        .flashlight-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+
+        .flashlight-overlay.active {
+            display: flex;
+        }
+
+        .flashlight-overlay .flash-icon {
+            font-size: 80px;
+            color: #ffd700;
+            animation: flashPulse 1s ease-in-out infinite;
+            text-shadow: 0 0 60px rgba(255, 215, 0, 0.3);
+        }
+
+        @keyframes flashPulse {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .flashlight-overlay .flash-text {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 20px;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .flashlight-overlay .flash-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 10px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        /* ===== MAIN VIDEO WALL ===== */
+        .wall-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #0a0a0f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .wall {
+            width: 100vw;
+            height: 100vh;
+            background: #f5efe8;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== PROJECTION SURFACE ===== */
+        .projection-surface {
+            position: absolute;
+            top: 3%;
+            left: 3%;
+            right: 3%;
+            bottom: 3%;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 0 80px rgba(0,0,0,0.5),
+                0 0 60px rgba(255, 215, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mainVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            display: block;
+        }
+
+        /* ===== LIGHT REFLECTION ===== */
+        .light-reflection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(255, 215, 0, 0.03) 0%,
+                rgba(255, 215, 0, 0.01) 40%,
+                transparent 75%
+            );
+            animation: reflectPulse 3s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes reflectPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* ===== PROJECTOR BEAM EFFECT ===== */
+        .projector-beam {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(
+                to top,
+                rgba(255, 215, 0, 0.03) 0%,
+                rgba(255, 215, 0, 0.01) 30%,
+                transparent 100%
+            );
+            clip-path: polygon(0% 100%, 50% 0%, 100% 100%);
+            pointer-events: none;
+            z-index: 0;
+            animation: beamFlicker 4s ease-in-out infinite;
+        }
+
+        @keyframes beamFlicker {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scaleY(0.6); }
+            50% { opacity: 0.6; transform: translateX(-50%) scaleY(0.7); }
+        }
+
+        /* ===== FLASHLIGHT BUTTON ===== */
+        .flash-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(135deg, #ffd700, #f59e0b);
+            color: #000;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 
+                0 8px 40px rgba(255, 215, 0, 0.3),
+                0 0 80px rgba(255, 215, 0, 0.1);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            touch-action: manipulation;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .flash-btn:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 12px 50px rgba(255, 215, 0, 0.4);
+        }
+
+        .flash-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .flash-btn .icon {
+            font-size: 28px;
+        }
+
+        .flash-btn.active {
+            background: linear-gradient(135deg, #ff6b00, #dc2626);
+            color: #fff;
+            box-shadow: 0 8px 40px rgba(255, 0, 0, 0.3);
+        }
+
+        /* ===== CONTROLS PANEL ===== */
+        .controls-panel {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            background: rgba(10, 10, 25, 0.92);
+            backdrop-filter: blur(20px);
+            padding: 16px 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            display: none;
+            min-width: 320px;
+            max-width: 94vw;
+            transition: all 0.3s;
+        }
+
+        .controls-panel.active {
+            display: block;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .controls-row:first-child {
+            margin-top: 0;
+        }
+
+        .media-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.6);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            touch-action: manipulation;
+        }
+
+        .media-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+        }
+
+        .media-btn.primary {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            font-size: 18px;
+            padding: 8px 20px;
+        }
+
+        .media-btn.primary:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            min-width: 80px;
+        }
+
+        .progress-bar .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ffd700, #f59e0b);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time-display {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            min-width: 60px;
+            font-weight: 500;
+        }
+
+        .video-source-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.4);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+        }
+
+        .video-source-btn:hover {
+            background: rgba(255, 215, 0, 0.08);
+            border-color: rgba(255, 215, 0, 0.15);
+            color: #fff;
+        }
+
+        .video-source-btn.active {
+            background: rgba(255, 215, 0, 0.12);
+            border-color: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+
+        /* ===== FILE INPUT ===== */
+        .file-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        /* ===== TOP BAR ===== */
+        .top-bar {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            background: rgba(10, 10, 25, 0.75);
+            backdrop-filter: blur(16px);
+            padding: 6px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .top-bar .brand {
+            font-weight: 700;
+            color: #fff;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .top-bar .brand span {
+            color: #ffd700;
+        }
+
+        .top-bar .video-name {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 10px;
+            opacity: 0.5;
+        }
+
+        .top-bar .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ffd700;
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(10, 10, 25, 0.92);
+            backdrop-filter: blur(16px);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border-left: 3px solid #ffd700;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            font-size: 13px;
+            animation: toastIn 0.4s ease;
+            transition: all 0.3s;
+            max-width: 90vw;
+            text-align: center;
+            font-weight: 500;
+            pointer-events: auto;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.warning { border-left-color: #f59e0b; }
+
+        /* ===== TOGGLE CONTROLS ===== */
+        .toggle-btn {
+            position: fixed;
+            top: 80px;
+            right: 16px;
+            z-index: 40;
+            background: rgba(10, 10, 25, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.5);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(10, 10, 25, 0.95);
+            color: #fff;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .flash-btn {
+                padding: 14px 28px;
+                font-size: 16px;
+                bottom: 20px;
+            }
+            .controls-panel {
+                bottom: 80px;
+                padding: 12px 16px;
+                min-width: auto;
+                width: 94vw;
+            }
+            .media-btn {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            .media-btn.primary {
+                font-size: 16px;
+                padding: 6px 16px;
+            }
+            .top-bar {
+                top: 8px;
+                padding: 4px 12px;
+                font-size: 10px;
+            }
+            .top-bar .video-name {
+                max-width: 80px;
+            }
+            .toggle-btn {
+                top: 70px;
+                right: 10px;
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            .flashlight-overlay .flash-icon {
+                font-size: 60px;
+            }
+            .flashlight-overlay .flash-text {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .flash-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                bottom: 16px;
+                gap: 8px;
+            }
+            .flash-btn .icon {
+                font-size: 22px;
+            }
+            .controls-panel {
+                bottom: 70px;
+                padding: 10px 12px;
+            }
+            .media-btn {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+            .media-btn.primary {
+                font-size: 14px;
+                padding: 4px 12px;
+            }
+            .controls-row {
+                gap: 4px;
+            }
+            .time-display {
+                font-size: 9px;
+                min-width: 40px;
+            }
+        }
+
+        /* ===== LOADING ===== */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            border-radius: 16px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-overlay .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top: 3px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay span {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* ===== FULLSCREEN HINT ===== */
+        .hint {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.03);
+            text-align: center;
+            pointer-events: none;
+            transition: all 0.5s;
+        }
+
+        .hint.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FLASHLIGHT OVERLAY ===== -->
+    <div class="flashlight-overlay" id="flashlightOverlay">
+        <div class="flash-icon">🔦</div>
+        <div class="flash-text">FLASHLIGHT ON</div>
+        <div class="flash-sub">Point your phone's flashlight at the wall<br>to see the projection effect!</div>
+    </div>
+
+    <!-- ===== WALL ===== -->
+    <div class="wall-container">
+        <div class="wall" id="wall">
+            <div class="projection-surface" id="projectionSurface">
+                <video id="mainVideo" muted playsinline></video>
+                <div class="light-reflection" id="lightReflection"></div>
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="spinner"></div>
+                    <span id="loadingText">Loading video...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PROJECTOR BEAM ===== -->
+    <div class="projector-beam"></div>
+
+    <!-- ===== TOP BAR ===== -->
+    <div class="top-bar">
+        <div class="brand">
+            📱 <span>Projector</span>Wall
+        </div>
+        <span style="opacity:0.15;">|</span>
+        <span class="video-name" id="videoName">Ready</span>
+        <span class="dot"></span>
+    </div>
+
+    <!-- ===== HINT ===== -->
+    <div class="hint" id="hint">📌 Tap the flashlight button to project!</div>
+
+    <!-- ===== FLASHLIGHT BUTTON ===== -->
+    <button class="flash-btn" id="flashBtn" onclick="toggleFlashlight()">
+        <span class="icon">🔦</span>
+        <span id="flashBtnText">Activate Flashlight</span>
+    </button>
+
+    <!-- ===== TOGGLE CONTROLS ===== -->
+    <button class="toggle-btn" id="toggleBtn" onclick="toggleControls()">
+        <i class="fas fa-sliders-h"></i>
+    </button>
+
+    <!-- ===== CONTROLS PANEL ===== -->
+    <div class="controls-panel" id="controlsPanel">
+        <!-- Media Controls -->
+        <div class="controls-row">
+            <button class="media-btn" onclick="prevVideo()">⏮</button>
+            <button class="media-btn primary" id="playBtn" onclick="togglePlay()">▶</button>
+            <button class="media-btn" onclick="nextVideo()">⏭</button>
+            <button class="media-btn" onclick="toggleMute()">🔊</button>
+            
+            <div class="progress-bar" onclick="seekVideo(event)">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span class="time-display" id="timeDisplay">0:00</span>
+        </div>
+
+        <!-- Video Sources -->
+        <div class="controls-row" style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.03); padding-top:8px;">
+            <button class="video-source-btn" onclick="loadVideo('nature')">🌿 Nature</button>
+            <button class="video-source-btn" onclick="loadVideo('city')">🌆 City</button>
+            <button class="video-source-btn" onclick="loadVideo('ocean')">🌊 Ocean</button>
+            <button class="video-source-btn" onclick="loadVideo('space')">🚀 Space</button>
+            <button class="video-source-btn" onclick="loadVideo('music')">🎵 Music</button>
+            <div class="file-wrapper">
+                <button class="video-source-btn" style="color:#ffd700;">📁 File</button>
+                <input type="file" accept="video/*" onchange="loadLocalVideo(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script>
+        // ============================================================
+        // VIDEO LIBRARY
+        // ============================================================
+        const videoLibrary = {
+            nature: {
+                name: '🌿 Nature',
+                url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+                fallback: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+            },
+            city: {
+                name: '🌆 City',
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                fallback: 'https://www.w3schools.com/html/mov_bbb.mp4'
+            },
+            ocean: {
+                name: '🌊 Ocean',
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                fallback: 'https://www.w3schools.com/html/mov_bbb.mp4'
+            },
+            space: {
+                name: '🚀 Space',
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                fallback: 'https://www.w3schools.com/html/mov_bbb.mp4'
+            },
+            music: {
+                name: '🎵 Music',
+                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+                fallback: 'https://www.w3schools.com/html/mov_bbb.mp4'
+            }
+        };
+
+        // ============================================================
+        // STATE
+        // ============================================================
+        const state = {
+            video: null,
+            isPlaying: false,
+            isMuted: false,
+            currentKey: 'nature',
+            flashActive: false,
+            controlsVisible: false,
+            videoLoaded: false
+        };
+
+        // ============================================================
+        // DOM REFS
+        // ============================================================
+        const video = document.getElementById('mainVideo');
+        const playBtn = document.getElementById('playBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const videoName = document.getElementById('videoName');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const flashlightOverlay = document.getElementById('flashlightOverlay');
+        const flashBtn = document.getElementById('flashBtn');
+        const flashBtnText = document.getElementById('flashBtnText');
+        const controlsPanel = document.getElementById('controlsPanel');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const hint = document.getElementById('hint');
+
+        // ============================================================
+        // VIDEO LOADING
+        // ============================================================
+        function loadVideo(key) {
+            const source = videoLibrary[key];
+            if (!source) return;
+            
+            state.currentKey = key;
+            
+            loadingOverlay.classList.add('show');
+            loadingText.textContent = 'Loading video...';
+            videoName.textContent = source.name;
+            
+            video.src = source.url;
+            video.load();
+            
+            video.oncanplay = function() {
+                loadingOverlay.classList.remove('show');
+                state.videoLoaded = true;
+                video.play().catch(() => {});
+                state.isPlaying = true;
+                updatePlayButton();
+                showToast(`▶️ ${source.name}`, 'success');
+            };
+
+            video.onerror = function() {
+                // Try fallback
+                const fallback = source.fallback;
+                if (fallback) {
+                    video.src = fallback;
+                    video.load();
+                } else {
+                    loadingOverlay.classList.remove('show');
+                    showToast('⚠️ Error loading video', 'error');
+                }
+            };
+        }
+
+        function loadLocalVideo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const url = URL.createObjectURL(file);
+            videoName.textContent = file.name;
+            
+            loadingOverlay.classList.add('show');
+            loadingText.textContent = 'Loading local...';
+            
+            video.src = url;
+            video.load();
+            
+            video.oncanplay = function() {
+                loadingOverlay.classList.remove('show');
+                state.videoLoaded = true;
+                state.isPlaying = true;
+                updatePlayButton();
+                video.play().catch(() => {});
+                showToast(`📁 ${file.name}`, 'success');
+            };
+            
+            video.onerror = function() {
+                loadingOverlay.classList.remove('show');
+                showToast('❌ Error loading file', 'error');
+            };
+            
+            event.target.value = '';
+        }
+
+        // ============================================================
+        // FLASHLIGHT TOGGLE
+        // ============================================================
+        function toggleFlashlight() {
+            state.flashActive = !state.flashActive;
+            
+            if (state.flashActive) {
+                // Activate flashlight mode
+                flashlightOverlay.classList.add('active');
+                flashBtn.classList.add('active');
+                flashBtnText.textContent = 'Turn Off Flashlight';
+                document.body.style.background = '#000';
+                
+                // Try to use device flashlight (if available)
+                tryFlashlightAPI();
+                
+                showToast('🔦 Flashlight ON - Point at wall!', 'success');
+                hint.classList.add('hidden');
+                
+                // Request fullscreen for better experience
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            } else {
+                // Deactivate flashlight
+                flashlightOverlay.classList.remove('active');
+                flashBtn.classList.remove('active');
+                flashBtnText.textContent = 'Activate Flashlight';
+                document.body.style.background = '';
+                
+                // Turn off device flashlight
+                tryFlashlightAPI(false);
+                
+                showToast('🔦 Flashlight OFF', 'info');
+                
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            }
+        }
+
+        // ============================================================
+        // DEVICE FLASHLIGHT API
+        // ============================================================
+        function tryFlashlightAPI(turnOn = true) {
+            try {
+                // Check if device has flashlight capability
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    // Try to access camera flashlight
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                        .then(stream => {
+                            const track = stream.getVideoTracks()[0];
+                            if (track && track.applyConstraints) {
+                                // Try to enable torch mode
+                                track.applyConstraints({
+                                    advanced: [{ torch: turnOn }]
+                                }).catch(() => {});
+                            }
+                            // Store stream to keep flashlight on
+                            if (turnOn) {
+                                window._flashStream = stream;
+                            } else {
+                                if (window._flashStream) {
+                                    window._flashStream.getTracks().forEach(t => t.stop());
+                                    window._flashStream = null;
+                                }
+                            }
+                        })
+                        .catch(() => {});
+                }
+            } catch (e) {
+                // Silently fail - fallback to screen flashlight
+            }
+        }
+
+        // ============================================================
+        // PLAYBACK CONTROLS
+        // ============================================================
+        function togglePlay() {
+            if (!state.videoLoaded) {
+                loadVideo('nature');
+                return;
+            }
+            
+            if (video.paused) {
+                video.play().catch(() => {});
+                state.isPlaying = true;
+            } else {
+                video.pause();
+                state.isPlaying = false;
+            }
+            updatePlayButton();
+        }
+
+        function updatePlayButton() {
+            const icon = playBtn.querySelector('i') || playBtn;
+            if (icon.tagName === 'I') {
+                icon.className = state.isPlaying ? 'fas fa-pause' : 'fas fa-play';
+            } else {
+                playBtn.textContent = state.isPlaying ? '⏸' : '▶';
+            }
+        }
+
+        function toggleMute() {
+            state.isMuted = !state.isMuted;
+            video.muted = state.isMuted;
+            showToast(state.isMuted ? '🔇 Muted' : '🔊 Unmuted', 'info');
+        }
+
+        function prevVideo() {
+            const keys = Object.keys(videoLibrary);
+            const idx = keys.indexOf(state.currentKey);
+            const prevIdx = (idx - 1 + keys.length) % keys.length;
+            loadVideo(keys[prevIdx]);
+        }
+
+        function nextVideo() {
+            const keys = Object.keys(videoLibrary);
+            const idx = keys.indexOf(state.currentKey);
+            const nextIdx = (idx + 1) % keys.length;
+            loadVideo(keys[nextIdx]);
+        }
+
+        function seekVideo(event) {
+            if (!video.duration) return;
+            const rect = progressBar.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+            video.currentTime = x * video.duration;
+        }
+
+        // ============================================================
+        // VIDEO EVENT LISTENERS
+        // ============================================================
+        video.addEventListener('timeupdate', () => {
+            if (!video.duration) return;
+            const percent = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = percent + '%';
+            const formatTime = (t) => {
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60);
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            };
+            timeDisplay.textContent = formatTime(video.currentTime);
+        });
+
+        video.addEventListener('ended', () => {
+            state.isPlaying = false;
+            updatePlayButton();
+            setTimeout(nextVideo, 1500);
+        });
+
+        // ============================================================
+        // CONTROLS TOGGLE
+        // ============================================================
+        function toggleControls() {
+            state.controlsVisible = !state.controlsVisible;
+            controlsPanel.classList.toggle('active', state.controlsVisible);
+            toggleBtn.innerHTML = state.controlsVisible ? 
+                '<i class="fas fa-times"></i>' : 
+                '<i class="fas fa-sliders-h"></i>';
+        }
+
+        // ============================================================
+        // TOAST
+        // ============================================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'KeyF':
+                    if (state.flashActive) {
+                        toggleFlashlight();
+                    } else {
+                        toggleFlashlight();
+                    }
+                    break;
+                case 'KeyM':
+                    toggleMute();
+                    break;
+                case 'KeyC':
+                    toggleControls();
+                    break;
+                case 'ArrowRight':
+                    if (video.duration) video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                    break;
+                case 'ArrowLeft':
+                    if (video.duration) video.currentTime = Math.max(0, video.currentTime - 10);
+                    break;
+            }
+        });
+
+        // ============================================================
+        // DRAG & DROP
+        // ============================================================
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length && files[0].type.startsWith('video/')) {
+                const input = document.getElementById('fileInput') || (() => {
+                    const inp = document.createElement('input');
+                    inp.type = 'file';
+                    inp.accept = 'video/*';
+                    inp.style.display = 'none';
+                    document.body.appendChild(inp);
+                    return inp;
+                })();
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                input.files = dt.files;
+                loadLocalVideo({ target: input });
+            }
+        });
+
+        // ============================================================
+        // DOUBLE CLICK - TOGGLE FLASHLIGHT
+        // ============================================================
+        document.addEventListener('dblclick', () => {
+            toggleFlashlight();
+        });
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        function init() {
+            // Load first video
+            setTimeout(() => {
+                loadVideo('nature');
+                showToast('📱 Tap the flashlight button to project!', 'info');
+            }, 500);
+            
+            // Auto-show controls
+            setTimeout(() => {
+                toggleControls();
+                setTimeout(() => toggleControls(), 3000);
+            }, 1000);
+            
+            // Hide hint after 5s
+            setTimeout(() => {
+                hint.classList.add('hidden');
+            }, 8000);
+            
+            console.log('📱 ProjectorWall - Flashlight Projector v1.0');
+            console.log('💡 Tap the flashlight button to project videos onto your wall!');
+            console.log('📖 Double-click anywhere to toggle flashlight');
+            console.log('⌨️  F = Flashlight, Space = Play/Pause, M = Mute, C = Controls');
+        }
+
+        // Auto-init
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // ============================================================
+        // SOUND EFFECTS - Make it feel real
+        // ============================================================
+        // Play a subtle click sound when flashlight toggles
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playClickSound() {
+            try {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.1;
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.05);
+            } catch (e) {
+                // Silently fail
+            }
+        }
+
+        // Override toggleFlashlight to include sound
+        const originalToggle = toggleFlashlight;
+        toggleFlashlight = function() {
+            playClickSound();
+            originalToggle();
+        };
+    </script>
+
+</body>
+</html>
